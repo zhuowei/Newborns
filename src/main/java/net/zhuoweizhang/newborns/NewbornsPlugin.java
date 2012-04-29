@@ -1,5 +1,6 @@
 package net.zhuoweizhang.newborns;
 import org.bukkit.*;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.block.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.*;
@@ -31,6 +32,10 @@ public class NewbornsPlugin extends JavaPlugin implements Listener {
 		//YamlConfiguration bornConfig = YamlConfiguration.loadConfiguration(bornFile);
 		//bornSet = new HashSet<String>();
 		//bornSet.addAll(bornConfig.getStringList("players"));
+		FileConfiguration config = getConfig();
+		config.options().copyDefaults(true);
+		maximumBabySurvivalTime = config.getLong("baby-survival-seconds") * 20;
+		saveConfig();
 		babyList = new ArrayList<Baby>();
 		babyCarrierMap = new HashMap<String, Baby>();
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new TickBabiesTask(), tickBabyInterval, tickBabyInterval);
@@ -117,11 +122,9 @@ public class NewbornsPlugin extends JavaPlugin implements Listener {
 		Block bed = e.getBed();
 		Location bedLocation = bed.getLocation();
 		List<Player> players = bed.getWorld().getPlayers();
-		System.out.println(bedLocation);
 		for (Player p: players) {
 			if (p.equals(player) || !p.isSleeping() || babyCarrierMap.get(p.getName()) != null) continue;
 			Location pLocation = p.getLocation();
-			System.out.println(pLocation);
 			if (Math.floor(pLocation.getY()) == Math.floor(bedLocation.getY()) && pLocation.distanceSquared(bedLocation) <= 4) {
 				haveChildren(player, p);
 			}
@@ -148,12 +151,11 @@ public class NewbornsPlugin extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerLoginEvent(PlayerLoginEvent event) {
-		System.out.println("Login");
+		//System.out.println("Login");
 
 		if (event.getResult() == PlayerLoginEvent.Result.KICK_WHITELIST && babyList.size() > 0) {
-			System.out.println("login whitelist");
+			System.out.println("[Newborns] Whitelisting player as baby");
 			Baby baby = selectNextBirthBaby();
-			System.out.println(baby.toString());
 			babyList.remove(baby);
 			if (babyCarrierMap.get(baby.parents[0]) != null) {
 				babyCarrierMap.remove(baby.parents[0]);
